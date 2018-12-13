@@ -149,3 +149,76 @@ def getUserKeyword(userid, wxid):
     con.commit()
     con.close()
     return kw
+
+def insertWxGroupMessage(userid, wxid, msg_member, msg_group, msg_time, msg):
+    '''
+    将微信群聊消息保存到数据库
+    :param userid: 用户ID
+    :param wxid: 微信ID
+    :param msg_member: 发送方微信ID
+    :param msg_group:群来源
+    :param msg_time:发送时间
+    :param msg:消息内容
+    :return:返回是否保存成功
+    '''
+
+    print([userid, wxid, msg_member, msg_group, msg_time, msg])
+
+    import sqlite3
+    con = sqlite3.connect('Jarvis-forChat.db')
+    c = con.cursor()
+    sg = True
+    try:
+        c.execute("insert into WX_group_msg (userID,WX_id,source_WX_id,src_WXgrp,msg_time, msg) \
+         values (?,?,?,?,?,?)", (userid, wxid, msg_member, msg_group, msg_time, msg))
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(e)
+        con.rollback()
+        sg = False
+        print('[-]Error')
+        con.close()
+    finally:
+        return sg
+
+def setKeywords(userid,wxid,key,group):
+    '''
+    微信设置关键词和应用群组,插入一个群组
+    :return: 是否成功的bool值
+    '''
+    import sqlite3
+    con = sqlite3.connect('Jarvis-forChat.db')
+    c = con.cursor()
+    sg = True
+    try:
+        c.execute("insert into WX_keyWords_set (userID,WX_id,keyword,apply_area) \
+             values (?,?,?,?)", (userid, wxid, key, group))
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(e)
+        con.rollback()
+        sg = False
+        print('[-]Error')
+        con.close()
+    finally:
+        return sg
+
+def deleteKeywords(userid,wxid,keyword):
+    import sqlite3
+    con = sqlite3.connect('Jarvis-forChat.db')
+    c = con.cursor()
+    sg = True
+    try:
+        c.execute("delete from WX_group_msg where userid = ?, wxid = ?,keyword = ?", (userid,wxid,keyword))
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(e)
+        con.rollback()
+        sg = False
+        print('[-]Error')
+        con.close()
+    finally:
+        return sg
