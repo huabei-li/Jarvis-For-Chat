@@ -142,7 +142,7 @@ def getUserKeyword(userid, wxid):
     import sqlite3
     con = sqlite3.connect('Jarvis-forChat.db')
     c = con.cursor()
-    cursor = c.execute("select keyword from WX_keyWords_set where userID= ? and WX_id= ?", (userid, wxid))
+    cursor = c.execute("select distinct keyword from WX_keyWords_set where userID= ? and WX_id= ?", (userid, wxid))
     kw = []
     for item in cursor:
         kw.append(item[0])
@@ -201,28 +201,64 @@ def insertWxGroupMessage(userid, wxid, msg_member, msg_group, msg_time, msg):
     finally:
         return sg
 
-def setKeywords(userid,wxid,key,group):
+def setKeywords_0(userid,wxid,key,group):
     '''
-    微信设置关键词和应用群组,插入一个群组
+    微信设置关键词初始化，将所有的群组状态置为0
+    :param userid:用户ID
+    :param wxid:微信ID
+    :param key:关键词
+    :param group:作用的群聊名称（一个）
     :return: 是否成功的bool值
     '''
     import sqlite3
     con = sqlite3.connect('Jarvis-forChat.db')
     c = con.cursor()
     sg = True
-    try:
-        c.execute("insert into WX_keyWords_set (userID,WX_id,keyword,apply_area) \
-             values (?,?,?,?)", (userid, wxid, key, group))
-        con.commit()
-        con.close()
-    except Exception as e:
-        print(e)
-        con.rollback()
-        sg = False
-        print('[-]Error')
-        con.close()
-    finally:
-        return sg
+    for i in range(len(group)):
+        try:
+            c.execute("insert into WX_keyWords_set (userID,WX_id,keyword,apply_area,chosen) \
+                 values (?,?,?,?,?)", (userid, wxid, key, group[i],0))
+            con.commit()
+            #con.close()
+        except Exception as e:
+            print(e)
+            con.rollback()
+            sg = False
+            print('[-]Error')
+            #con.close()
+        #finally:
+            #return sg
+    con.close()
+    return sg
+
+def setKeywords_1(userid,wxid,key,group):
+    '''
+    微信设置关键词和应用群组,将群组状态置为1
+    :param userid:用户ID
+    :param wxid:微信ID
+    :param key:关键词
+    :param group:作用的群聊名称（一个）
+    :return: 是否成功的bool值
+    '''
+    import sqlite3
+    con = sqlite3.connect('Jarvis-forChat.db')
+    c = con.cursor()
+    sg = True
+    for i in range(len(group)):
+        try:
+            c.execute("update WX_keyWords_set set chosen=1 where userID=? and WX_id=? and keyword=? and apply_area=?", (userid, wxid, key, group[i]))
+            con.commit()
+            #con.close()
+        except Exception as e:
+            print(e)
+            con.rollback()
+            sg = False
+            print('[-]Error')
+            #con.close()
+        #finally:
+            #return sg
+    con.close()
+    return sg
 
 def deleteKeywordOfGroup(userid,wxid,keyword,grp):
     '''
@@ -250,6 +286,7 @@ def deleteKeywordOfGroup(userid,wxid,keyword,grp):
     finally:
         return sg
 
+
 def deleteKeyword(userid,wxid,keyword):
     '''
     删除关键词
@@ -264,7 +301,7 @@ def deleteKeyword(userid,wxid,keyword):
     import sqlite3
     con = sqlite3.connect('Jarvis-forChat.db')
     c = con.cursor()
-    for i in len(apy_are):
+    for i in range(len(apy_are)):
         sg = True
         try:
             c.execute("delete from WX_keyWords_set where userID = ? and WX_id = ? and keyword = ? and apply_area = ?  ", (userid,wxid,keyword,apy_are[i]))
@@ -279,7 +316,6 @@ def deleteKeyword(userid,wxid,keyword):
         #finally:
     return sg
 
-#def deleteKeyword()
 
 def addKeywordGroup(userid,wxid,key,group):
     '''
@@ -307,4 +343,74 @@ def addKeywordGroup(userid,wxid,key,group):
         con.close()
     finally:
         return sg
+
+def getUseridAndWxidWithLogStatus():
+    '''
+    将登陆状态为1的用户信息输出
+    :return: 用户ID和wxid
+    '''
+    import sqlite3
+    con = sqlite3.connect('Jarvis-forChat.db')
+    c = con.cursor()
+    cursor = c.execute("select userID,WX_id from Wechat where Wechat.userID = User.userID and User.log_status=1")
+    info = []
+    for item in cursor:
+        info.append(item[0])
+    con.commit()
+    con.close()
+    return info
+
+def getChosen(userid,wxid,key):
+    import sqlite3
+    con = sqlite3.connect('Jarvis-forChat.db')
+    c = con.cursor()
+    cursor = c.execute("select chosen from WX_keyWords_set where userID= ? and WX_id= ? and keyword = ?", (userid, wxid,key))
+    #info = []
+    for item in cursor:
+        info=item[0]
+    con.commit()
+    con.close()
+    return info
+
+
+def changeKeywordGroupStatus(userid,wxid,key,grp):
+    '''
+    关键词操作群组改变，将传入的群组列表的群组的状态置1
+    :param userid:用户ID
+    :param wxid:微信ID
+    :param key:关键词
+    :param grp:群聊名称列表
+    :return:成功为True，失败为False
+    '''
+    import sqlite3
+    sg = True
+    con = sqlite3.connect('Jarvis-forChat.db')
+    c = con.cursor()
+    for i in range(len(grp)):
+        try:
+            c.execute("update WX_keyWords_set set chosen=0 where userID= ? and WX_id= ? and keyword = ?",
+                       (userid, wxid, key))
+            con.commit()
+        except Exception as e:
+            print(e)
+            con.rollback()
+            sg = False
+            print('[-]Error')
+        #finally:
+        #    return sg
+    for i in range(len(grp)):
+        try:
+            c.execute("update WX_keyWords_set set chosen=1 where userID=? and WX_id=? and keyword =? and grp=?",
+                      (userid, wxid, key, grp[i]))
+            con.commit()
+        except Exception as e:
+            print(e)
+            con.rollback()
+            sg = False
+            print('[-]Error')
+        #finally:
+        #    return sg
+    #con.commit()
+    con.close()
+    return sg
 
