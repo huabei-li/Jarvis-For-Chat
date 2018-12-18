@@ -414,3 +414,29 @@ def changeKeywordGroupStatus(userid,wxid,key,grp):
     con.close()
     return sg
 
+def keyWordGroupStatus(userID, WX_id, keyword):
+    '''
+获取相应关键词作用的群组状态
+    :param userID: 用户名 字符串类型
+    :param WX_id: 微信账号 字符串类型
+    :param keyword: 关键词 字符串类型
+    :return: tuple类型，群名：状态(1/0)
+    '''
+    import sqlite3
+    conn = sqlite3.connect('Jarvis-forChat.db')
+    c = conn.cursor()
+    print("success\n")
+    dict = {}
+    cursor = c.execute("select apply_area, chosen from WX_keyWords_set where userID =? and WX_id = ? and keyword = ?",
+                       (userID, WX_id, keyword))
+    for row in cursor:
+        if row[1] == 1:
+            value = True
+        else:
+            value = False
+
+        dictt = {row[0]: value}
+        dict.update(dictt)
+    conn.close()
+    str(dict)
+    return dict
