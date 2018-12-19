@@ -207,7 +207,7 @@ def setKeywords_0(userid,wxid,key,group):
     :param userid:用户ID
     :param wxid:微信ID
     :param key:关键词
-    :param group:作用的群聊名称（一个）
+    :param group:作用的群聊名称（列表）
     :return: 是否成功的bool值
     '''
     import sqlite3
@@ -237,7 +237,7 @@ def setKeywords_1(userid,wxid,key,group):
     :param userid:用户ID
     :param wxid:微信ID
     :param key:关键词
-    :param group:作用的群聊名称（一个）
+    :param group:作用的群聊名称（列表）
     :return: 是否成功的bool值
     '''
     import sqlite3
@@ -425,18 +425,22 @@ def keyWordGroupStatus(userID, WX_id, keyword):
     import sqlite3
     conn = sqlite3.connect('Jarvis-forChat.db')
     c = conn.cursor()
-    print("success\n")
-    dict = {}
-    cursor = c.execute("select apply_area, chosen from WX_keyWords_set where userID =? and WX_id = ? and keyword = ?",
+    list = []
+    try:
+        cursor = c.execute("select apply_area, chosen from WX_keyWords_set where userID =? and WX_id = ? and keyword = ?",
                        (userID, WX_id, keyword))
-    for row in cursor:
-        if row[1] == 1:
-            value = True
-        else:
-            value = False
+        for row in cursor:
+            if row[1] == 1:
+                value = 1
+            else:
+                value = 0
 
-        dictt = {row[0]: value}
-        dict.update(dictt)
+            tuple = (row[0], value)
+            list.append(tuple)
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        sg = False
+        print('[-]Error')
     conn.close()
-    str(dict)
-    return dict
+    return list
